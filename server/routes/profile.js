@@ -69,6 +69,14 @@ router.put('/', auth, async (req, res) => {
     }
   });
   
-  
+  router.get('/saved', auth, async (req, res) => {
+    try {
+      const quizzes = await Quiz.find({ userId: req.user.id });
+      res.json({ quizzes });
+    } catch (error) {
+      console.error("Error fetching saved quizzes:", error);
+      res.status(500).json({ message: "Failed to load saved quizzes" });
+    }
+  });
 
 module.exports = router;

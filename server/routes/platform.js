@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const Groq = require('groq-sdk');
 const auth = require('../middleware/auth');
+const db = require('../db');
 
 dotenv.config();
 
@@ -107,6 +108,59 @@ router.post('/create', auth, async (req, res) => {
 
     console.warn("Using fallback quiz questions.");
     return res.json({ platform: fallbackQuestions });
+  }
+});
+
+
+// POST /api/platform/save
+router.post('/save', auth, async (req, res) => {
+  const userId = req.user?.id;
+  const { title, questions } = req.body;
+
+  console.log('Saving quiz for user:', userId);
+
+  try {
+    // Validate inputs
+    if (!title || !questions) {
+      return res.status(400).json({ message: 'Title and questions are required' });
+    }
+
+    // Insert quiz into saved_quizzes table
+    const result = await db.query(
+      'INSERT INTO saved_quizzes (user_id, title, questions, saved_at) VALUES ($1, $2, $3, NOW()) RETURNING *',
+      [userId, title, JSON.stringify(questions)]
+    );
+
+    res.status(201).json({
+      message: 'Quiz saved successfully',
+      savedQuiz: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Error saving quiz:', error);
+    res.status(500).json({ message: 'Failed to save quiz' });
+  }
+});
+
+router.get('/save', auth, async (req, res) => {
+  const userId = req.user?.id; // Ensure it's a number
+
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing or invalid userId' });
+  }
+
+  try {
+    const result = await db.query(
+      'SELECT * FROM saved_quizzes WHERE user_id = $1 ORDER BY saved_at DESC',
+      [userId]
+    );
+
+    console.log("Fetched quizzes:", result.rows);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching saved quizzes:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

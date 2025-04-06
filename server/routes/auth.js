@@ -62,8 +62,8 @@ router.post('/login', [
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
     res.json({ token, name: user.name, id: user.id });
   } catch (err) {
-    console.error('Login fail ra:', err.message);
-    res.status(500).json({ error: 'Login fail ra bey!' });
+    console.error('Login fail:', err.message);
+    res.status(500).json({ error: 'Login fail!' });
   }
 });
 
